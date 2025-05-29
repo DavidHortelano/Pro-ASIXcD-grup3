@@ -278,6 +278,8 @@ En estas imagenes esta reflejada la configuracion necesaria para que un cliente 
 
 Como se puede ver el cliente se puede conectar perfectamente al servidor, coger y subir archivos a la carpeta.
 
+![Image Description](Imagenes/FTP4.png)
+
 ## Servicio Active Directory
 
 En las siguientes capturas se puede apreciar toda la gestiones de usuarios y grupos en active directory, mostrando la organización de ellos dentro del CPD.
