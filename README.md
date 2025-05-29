@@ -37,7 +37,8 @@ Cal proposar una solució de CPD que contempli -com a mínim- els següents requ
 
   https://home.by.me/es/project/1da8d444075e08de9ed2e62/proasixcdgrup2?open_planner=true
 
-  (imagen)
+  ![Image Description](Imagenes/CPD1.png)
+  ![Image Description](Imagenes/CPD2.png)
 
   La imagen mostrada es una pequeña representación de cómo funcionará el sistema de la refrigeración, el aire caliente saldrá por la parte céntrica y posteriormente saliendo por el sistema de aire acondicionado por la parte superior, el aire frío saldrá de unas rejillas instaladas en el suelo de la habitación del CPD, por eso el suelo técnico y el techo técnico son importantes para el espacio requerido. Y de la misma manera irían los cables, saldrían de la parte céntrica (donde empiezan los cables y que está marcado con las flechas rojas) y luego se irían por la zona de debajo.
 
@@ -63,7 +64,7 @@ Cal proposar una solució de CPD que contempli -com a mínim- els següents requ
 
   https://online.visual-paradigm.com/es/diagrams/features/rack-diagram-software/
 
-  (imagen)
+  ![Image Description](Imagenes/CPD3.png)
 
 * Infraestructura eléctrica:
 
@@ -97,7 +98,8 @@ Cal proposar una solució de CPD que contempli -com a mínim- els següents requ
 
   * Diagramas, planos y fotografías de toda la seguridad física incorporada.
 
-  (imagen)
+  ![Image Description](Imagenes/CPD4.png)
+  ![Image Description](Imagenes/CPD5.png)
 
   Como podemos apreciar en las imágenes hemos intentado hacer una distribución segura y efectiva principalmente. Empezando por la habitación 1 (la del CPD) estaría compuesta por los extintores anteriormente mencionados y las cámaras de vigilancia que cubrirán todas las esquinas de cualquier sabotaje de dicha CPD. La habitación 6 (zona de alimentación) de igual manera estará vigilada por 4 cámaras y con un extintor. La habitación 2 y 5 serían zonas de escape en caso de incendio al ser dos se reparten el trabajo de sacar a los empleados, la habitación 2 con su cámara cubrirá la entrada y salida de todo el pasillo sin necesidad de poner más cámaras y gastar más, esto se aplica también en la habitación 5.
 
@@ -157,7 +159,225 @@ Cal proposar una solució de CPD que contempli -com a mínim- els següents requ
   Configuración del BIOS y del sistema operativo: Configura los equipos para maximizar la eficiencia energética.
 
 * Implementación del CPD en la nube AWS con los servicios utilizados (mínimo de 4 - los servicios de audio, video y bases de datos se valoran en los otros bloques).
+## Diseño de la red
+* Aqui tenemos el diseño de la red
+
+![Image Description](Imagenes/Red1.png)
+
+La cual esta dividida por tres redes la LAN que es la 172.80.80.0/24 la de color rosa donde tenemos el windows server con servicios como active directory DNS, DHCP etc…
+Luego tendríamos el DMZ que es la 172.16.81.0/24 la zona verde que es donde tenemos el servicio de streaming, nginx y cliente ftp, y por último la zona roja que es el router que es la 192.168.82.0/28 da salida a internet y conecta la DMZ con la LAN. También hay que remarcar que entre los router y la LAN tenemos un firewall el cual más adelante esta explicadas sus reglas.
 
 # Instalación de servicio de audio (Icecast2/Darkice)
-
 ## Icecast2
+Primeramente hacemos el apt install de los paquetes de “icecast2”.
+
+![Image Description](Imagenes/Icecast1.png)
+
+El archivo de configuración /etc/icecast2/icecast.xml deberías tenerlo bien por defecto.
+
+![Image Description](Imagenes/Icecast2.png)
+
+Importante permitir el puerto 8000 en el security group.
+
+![Image Description](Imagenes/Icecast3.png)
+
+Reiniciamos y habilitamos el servicio icecast2.
+
+![Image Description](Imagenes/Icecast4.png)
+
+Comprobamos el estado del servicio.
+
+![Image Description](Imagenes/Icecast5.png)
+![Image Description](Imagenes/Icecast6.png)
+
+## Darkice
+Procedemos con la instalación del servicio darkice.
+
+![Image Description](Imagenes/Darkice1.png)
+
+Creamos y agregamos el contenido al archivo /etc/darkice.cfg.
+
+![Image Description](Imagenes/Darkice2.png)
+
+Instalamos la versión genérica del kernel para así poder utilizar el módulo necesario para crear tarjetas virtuales.
+
+![Image Description](Imagenes/Darkice3.png)
+
+Buscamos la version generica con “grep menuentry /boot/grub/grub.cfg”.
+
+![Image Description](Imagenes/Darkice4.png)
+
+En el archivo /etc/default/grub modificamos la línea “GRUB_DEFAULT=” por la línea que se ve en la captura de pantalla que es la versión genérica que hemos instalado. Esto obliga a que cuando 
+reiniciemos el sistema se ponga esta versión por defecto.
+
+![Image Description](Imagenes/Darkice5.png)
+
+Aplicamos los cambios con un sudo update-grub.
+
+![Image Description](Imagenes/Darkice6.png)
+
+![Image Description](Imagenes/Darkice7.png)
+
+![Image Description](Imagenes/Darkice8.png)
+
+![Image Description](Imagenes/Darkice9.png)
+
+![Image Description](Imagenes/Darkice10.png)
+
+![Image Description](Imagenes/Darkice11.png)
+
+![Image Description](Imagenes/Darkice12.png)
+
+![Image Description](Imagenes/Darkice13.png)
+
+# Instalación de servicio de imagen (FFmpeg + WebM)
+
+sudo apt update
+sudo apt install ffmpeg -y
+
+Ponemos el punto de montaje para el stream.
+
+![Image Description](Imagenes/Simagen1.png)
+
+![Image Description](Imagenes/Simagen2.png)
+
+
+ffmpeg -re -i videoplayback2.mp4 -c:v libvpx -b:v 800k -c:a libvorbis -f webm -content_type video/webm icecast://source:sourcepass@34.236.242.52:8000/stream.webm
+
+![Image Description](Imagenes/Simagen3.png)
+
+
+http://ipdelservidor:8000/stream.webm
+
+![Image Description](Imagenes/Simagen4.png)
+
+
+## Servicio DHCP
+
+Como se puede ver en la imagen la configuración DHCP, se ve el ámbito creado en IPv4 (con la ip de la red a la que se concede el servicio) donde se puede comprobar el rango de IP que administra el servicio, el rango de IP excluidas y las IP reservadas por un MAC (dirección física)
+
+![Image Description](Imagenes/DHCP1.png)
+
+## Servicio DNS
+
+En la Imágenes que puede ver la configuración de las zonas DNS del CPD.
+
+![Image Description](Imagenes/DNS1.png)
+![Image Description](Imagenes/DNS2.png)
+
+
+## Servicio FTP
+
+En estas imagenes esta reflejada la configuracion necesaria para que un cliente se conecte al servidor FTP donde tambien esta la carpeta para la gestion de los archivos.
+
+![Image Description](Imagenes/FTP1.png)
+
+![Image Description](Imagenes/FTP2.png)
+
+![Image Description](Imagenes/FTP3.png)
+
+Como se puede ver el cliente se puede conectar perfectamente al servidor, coger y subir archivos a la carpeta.
+
+## Servicio Active Directory
+
+En las siguientes capturas se puede apreciar toda la gestiones de usuarios y grupos en active directory, mostrando la organización de ellos dentro del CPD.
+
+![Image Description](Imagenes/AD1.png)
+
+![Image Description](Imagenes/AD2.png)
+
+![Image Description](Imagenes/AD3.png)
+
+![Image Description](Imagenes/AD4.png)
+
+![Image Description](Imagenes/AD5.png)
+
+## Servicio NFS
+
+Para el servidor NFS lo que hemos hecho es crear cuatro recursos compartidos tres de ellos para unos departamentos específicos con unas IPs específicas para que solo los trabajadores de ese departamento tengan acceso. Y por separado una general de trabajadores donde todos los trabajadores pueden ver todo lo que suban/creen los demás para trabajar en conjunto.
+
+![Image Description](Imagenes/NFS1.png)
+
+Aquí vemos como en uno de los clientes windows que tenemos les sale el recurso compartido del el server NFS como en este caso este no tiene ninguna de las IPs de los departamentos concretos sólo puede acceder al recurso de trabajadores
+
+![Image Description](Imagenes/NFS2.png)
+
+Aquí vemos como esta dentro del recurso de trabajadores
+
+![Image Description](Imagenes/NFS3.png)
+
+Y aquí vemos el ejemplo de una de las otras carpetas que son para departamentos concretos en este caso el de redes al no tener la IP dentro del rango que hemos establecido en el documento del servidor da error y no puedes acceder.
+
+![Image Description](Imagenes/NFS4.png)
+
+## Servicio Firewall
+
+Para el firewall hemos utilizado las iptables ahora haré el paso a paso explicando todo lo que hemos colocado el que hemos permitido y lo que no:
+
+Empezamos estableciendo las políticas por defecto que será denegar todo lo entrante, permitir todo lo saliente y permitimos todo en forward
+
+![Image Description](Imagenes/Firewall1.png)
+
+Y antes de empezar por cada LAN permitiremos el tráfico establecido y relacionado en todas las interfaces
+
+![Image Description](Imagenes/Firewall2.png)
+
+Ahora empezaremos con la interfaz de la LAN
+
+en la LAN lo primero que haremos será permitir el tráfico desde esta propia
+
+![Image Description](Imagenes/Firewall3.png)
+
+Luego permitiremos la conexión tanto de FTP como de ICMP con la DMZ para poder hacer ping y poder subir los videos y audios al servicio de streaming y audio
+
+![Image Description](Imagenes/Firewall4.png)
+
+Y por último en la LAN denegamos cualquier otro tráfico entrante que no sea lo que hemos permitido
+
+![Image Description](Imagenes/Firewall5.png)
+
+En la DMZ no tocaremos nada ya que será el servidor el cual podrá acceder la gente externa y dado eso permitiremos las conexión por defecto hacia este
+
+Y por último entre interfaces negaremos todo el tráfico Forward que no se haya permitido. 
+
+![Image Description](Imagenes/Firewall6.png)
+
+Por último guardamos las reglas y ya estaría todo hecho de manera para tener un firewall básico.
+
+![Image Description](Imagenes/Firewall7.png)
+
+## Nagios
+
+Nagios lo estamos utilizando para monitorizar la red ya que así se puede ver los servicios y problemas que puede tener el host etc…
+
+![Image Description](Imagenes/Nagios1.png)
+
+Aquí podemos ver el listado de servicio que tiene el servidor monitorizado y si están funcionando correctamente o si tiene algún problema, en este caso nos falla el Swap Usage porque no tiene ningún mb libre (supongo que esto se da por el hecho de estar usando la máquina en aws y tener únicamente un disco duro).
+
+![Image Description](Imagenes/Nagios2.png)
+
+También podemos ver mas específicamente información sobre los servicios por ejemplo del HTTP
+
+![Image Description](Imagenes/Nagios3.png)
+
+Y por último luego tenemos los atajos para ver si queremos ver cosas determinadas directamente
+
+![Image Description](Imagenes/Nagios4.png)
+
+## BBDD
+
+![Image Description](Imagenes/BBDD1.png)
+
+Instalacion previa del mysql, despues creamos las tablas de GrupNivell, empleat, departament con 
+
+![Image Description](Imagenes/BBDD2.png)
+
+![Image Description](Imagenes/BBDD3.png)
+
+![Image Description](Imagenes/BBDD4.png)
+
+* Investigar i comparar eficiència energètica amb altres proveïdors del núvol. Com els diferents proveïdors ofereixen solucions de CPD administrats per aquestes empreses i com donen cobertura als requeriments exposats anteriorment
+
+![Image Description](Imagenes/BBDD5.png)
+
+En resumen, aunque AWS es una opción sólida para tu CPD de streaming, es útil saber que Google Cloud Platform a menudo lidera en eficiencia energética.
